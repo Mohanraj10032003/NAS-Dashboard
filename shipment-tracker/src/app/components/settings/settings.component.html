@@ -1,0 +1,171 @@
+<div class="app">
+  <div class="orbs" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i></div>
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="22" height="22" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round">
+          <ellipse cx="32" cy="16" rx="18" ry="7" />
+          <path d="M14 16v14c0 3.9 8 7 18 7s18-3.1 18-7V16" />
+          <path d="M14 30v14c0 3.9 8 7 18 7s18-3.1 18-7V30" />
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="app-name">{{ appName }}</div>
+        <div class="app-sub">Settings</div>
+      </div>
+    </div>
+    <div class="top-actions">
+      <app-theme-toggle></app-theme-toggle>
+      <div class="user">
+        <div class="avatar" aria-hidden="true">{{ userName ? userName.charAt(0).toUpperCase() : 'U' }}</div>
+        <div class="user-meta">
+          <strong>{{ userName }}</strong>
+          <span>{{ userRole }}</span>
+        </div>
+      </div>
+      <button class="btn ghost icon-sm" type="button" (click)="logout()" title="Sign out" aria-label="Sign out">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></svg>
+        <span class="hide-sm">Sign out</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="content">
+    <div class="page-head">
+      <button class="btn ghost" type="button" (click)="back()">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+        Dashboard
+      </button>
+      <div>
+        <h1>NAS paths</h1>
+        <p class="muted">The folder of every application. Change a path or add a new application here: no code change or new deployment needed.</p>
+      </div>
+    </div>
+
+    <section class="panel" *ngIf="loading" aria-live="polite"><div class="loader"></div><span class="muted">Loading the settings…</span></section>
+
+    <section class="panel alert" *ngIf="loadError" role="alert">
+      <strong>Could not open the settings</strong>
+      <span>{{ loadError }}</span>
+      <button class="btn soft" type="button" (click)="load()">Try again</button>
+    </section>
+
+    <ng-container *ngIf="!loading && !loadError">
+      <p class="banner" *ngIf="!canEdit">Only an Admin user can change these paths. You can look at them.</p>
+
+      <!-- ===== root ===== -->
+      <section class="panel">
+        <div class="head">
+          <h2>Root path</h2>
+          <span class="tag" *ngIf="customised">Edited here</span>
+          <span class="tag plain" *ngIf="!customised">From appsettings.json</span>
+        </div>
+        <p class="muted small">All folders below that are not a full path are looked for inside this root.</p>
+        <label class="field" [class.bad]="rootError">
+          <span class="lbl">Root folder</span>
+          <input id="root" class="mono" type="text" [(ngModel)]="root" [disabled]="!canEdit" spellcheck="false" autocomplete="off" placeholder="\\server\share\folder" />
+          <span class="err" *ngIf="rootError">{{ rootError }}</span>
+        </label>
+      </section>
+
+      <!-- ===== applications ===== -->
+      <section class="panel">
+        <div class="head">
+          <h2>Applications <span class="count">{{ rows.length }}</span></h2>
+          <button class="btn primary" type="button" (click)="add()" *ngIf="canEdit">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14" /></svg>
+            Add application
+          </button>
+        </div>
+        <p class="muted small">The name is what you see in the drop-down. The folder is relative to the root, or a full <code>\\server\share\…</code> path.</p>
+
+        <ul class="rows">
+          <li class="row" *ngFor="let r of rows; let i = index; trackBy: trackRow" [class.bad]="rowError(i)">
+            <div class="cols">
+              <label class="field c-name">
+                <span class="lbl">Name</span>
+                <input [id]="'name-' + r.key" type="text" [(ngModel)]="r.name" [disabled]="!canEdit" maxlength="60" autocomplete="off" placeholder="e.g. DiagCAM" />
+              </label>
+              <label class="field c-folder">
+                <span class="lbl">Folder</span>
+                <input class="mono" type="text" [(ngModel)]="r.folder" [disabled]="!canEdit" spellcheck="false" autocomplete="off" placeholder="DiagCAM\DiagCAM" />
+              </label>
+              <div class="row-actions" *ngIf="canEdit">
+                <button class="btn soft sm" type="button" (click)="test(r)" [disabled]="!canTest(r) || r.checking" [title]="canTest(r) ? 'Look at this folder on the NAS' : 'Save your changes first, then test'">
+                  <span class="spin" *ngIf="r.checking"></span>
+                  {{ r.checking ? 'Testing' : canTest(r) ? 'Test' : 'Save to test' }}
+                </button>
+                <button class="icon-btn" type="button" (click)="move(i, -1)" [disabled]="i === 0" aria-label="Move up" title="Move up">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6" /></svg>
+                </button>
+                <button class="icon-btn" type="button" (click)="move(i, 1)" [disabled]="i === rows.length - 1" aria-label="Move down" title="Move down">
+                  <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                </button>
+                <button class="icon-btn danger" type="button" (click)="remove(i)" [class.armed]="confirmRemove === i" [attr.aria-label]="confirmRemove === i ? 'Click again to remove' : 'Remove'" [title]="confirmRemove === i ? 'Click again to remove' : 'Remove'">
+                  <svg *ngIf="confirmRemove !== i" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" /></svg>
+                  <span *ngIf="confirmRemove === i">Sure?</span>
+                </button>
+              </div>
+            </div>
+            <div class="full mono" title="The API reads this folder"><span>Reads</span> {{ fullPath(r) || '…' }}</div>
+            <div class="err" *ngIf="rowError(i)">{{ rowError(i) }}</div>
+
+            <!-- test result -->
+            <div class="check" *ngIf="r.check || r.checkError" aria-live="polite">
+              <div class="err" *ngIf="r.checkError">{{ r.checkError }}</div>
+              <ng-container *ngIf="r.check as c">
+                <div class="check-head">
+                  <span class="pill" [class.ok]="c.reachable" [class.no]="!c.reachable">{{ c.reachable ? 'Folder reached' : 'Not reachable' }}</span>
+                  <span class="muted small">{{ c.ms }} ms</span>
+                </div>
+                <div class="err" *ngIf="c.error">{{ c.error }}</div>
+                <dl class="stats" *ngIf="c.files">
+                  <div><dt>Report files</dt><dd>{{ c.files | number }}</dd></div>
+                  <div><dt>Part numbers</dt><dd>{{ c.parts | number }}</dd></div>
+                  <div><dt>Date found in path</dt><dd>{{ pct(c.withDate, c.files) }}</dd></div>
+                  <div><dt>Part found in path</dt><dd>{{ pct(c.withPart, c.files) }}</dd></div>
+                  <div *ngIf="c.minDate"><dt>First day</dt><dd>{{ c.minDate }}</dd></div>
+                  <div *ngIf="c.maxDate"><dt>Last day</dt><dd>{{ c.maxDate }}</dd></div>
+                </dl>
+                <ul class="hints" *ngIf="c.hints.length"><li *ngFor="let h of c.hints">{{ h }}</li></ul>
+                <details class="sample" *ngIf="c.sample.length">
+                  <summary>Newest files found</summary>
+                  <ul><li class="mono" *ngFor="let s of c.sample">{{ s }}</li></ul>
+                </details>
+              </ng-container>
+            </div>
+          </li>
+        </ul>
+
+        <p class="muted pad" *ngIf="!rows.length">No application yet. Use "Add application".</p>
+      </section>
+
+      <p class="muted small note">
+        The NAS user name and password are not edited here. They stay in <code>appsettings.json</code> or in the <code>Nas__Password</code> environment variable, and an empty user means the Windows account that runs the API is used.
+      </p>
+    </ng-container>
+  </main>
+
+  <!-- ===== save bar ===== -->
+  <footer class="savebar" *ngIf="!loading && !loadError && canEdit" [class.show]="dirty || saveError || savedAt || customised">
+    <div class="msg" aria-live="polite">
+      <span class="err" *ngIf="saveError">{{ saveError }}</span>
+      <span *ngIf="!saveError && dirty">{{ valid ? 'You have unsaved changes.' : 'Fix the marked fields to save.' }}</span>
+      <span class="ok" *ngIf="!saveError && !dirty && savedAt">Saved. The dashboard uses the new paths now.</span>
+      <span class="muted" *ngIf="!saveError && !dirty && !savedAt">Everything is saved.</span>
+    </div>
+    <div class="btns">
+      <ng-container *ngIf="customised && !dirty">
+        <button class="btn ghost" type="button" *ngIf="!confirmReset" (click)="confirmReset = true">Restore appsettings.json</button>
+        <button class="btn danger" type="button" *ngIf="confirmReset" (click)="resetToDefaults()">Yes, restore</button>
+        <button class="btn ghost" type="button" *ngIf="confirmReset" (click)="confirmReset = false">Cancel</button>
+      </ng-container>
+      <button class="btn ghost" type="button" (click)="discard()" *ngIf="dirty" [disabled]="saving">Discard</button>
+      <button class="btn primary" type="button" (click)="save()" [disabled]="!dirty || !valid || saving">
+        <span class="spin" *ngIf="saving"></span>
+        {{ saving ? 'Saving' : 'Save changes' }}
+      </button>
+    </div>
+  </footer>
+</div>

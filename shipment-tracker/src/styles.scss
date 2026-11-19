@@ -1,0 +1,182 @@
+/* ==========================================================================
+   NAS Dashboard – global styles & theme tokens (day / night, glass look)
+   ========================================================================== */
+
+:root,
+:root[data-theme='light'] {
+  --font-body: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Sora Variable', 'Figtree Variable', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+
+  color-scheme: light;
+  --bg: #eaf0fb;
+  --aurora-1: rgba(99, 102, 241, 0.42);
+  --aurora-2: rgba(34, 211, 238, 0.4);
+  --aurora-3: rgba(244, 114, 182, 0.32);
+  --aurora-4: rgba(52, 211, 153, 0.28);
+
+  /* iPhone-style glass: see-through, strongly blurred, with a bright specular edge on top */
+  --glass: rgba(255, 255, 255, 0.46);
+  --glass-strong: rgba(255, 255, 255, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.78);
+  --glass-blur: blur(30px) saturate(200%);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(255, 255, 255, 0.28), inset 0 -1px 0 rgba(255, 255, 255, 0.18);
+  --pop-bg: rgba(255, 255, 255, 0.93);
+  --glass-edge: rgba(15, 23, 42, 0.07);
+  --surface: var(--glass);
+  --surface-2: rgba(255, 255, 255, 0.55);
+  --border: rgba(15, 23, 42, 0.09);
+  --border-strong: rgba(15, 23, 42, 0.18);
+
+  --text: #0f172a;
+  --text-dim: #5a6882;
+  --accent: #4f5bff;
+  --accent-2: #12b5d6;
+  --accent-ink: #ffffff;
+  --accent-soft: rgba(79, 91, 255, 0.12);
+  --grad: linear-gradient(135deg, #4f5bff 0%, #7b5cff 45%, #12b5d6 100%);
+
+  --pass: #0f9f6e;
+  --pass-soft: rgba(15, 159, 110, 0.13);
+  --fail: #e0324b;
+  --fail-soft: rgba(224, 50, 75, 0.12);
+  --other: #b7791f;
+  --other-soft: rgba(183, 121, 31, 0.14);
+
+  --shadow: 0 1px 1px rgba(15, 23, 42, 0.04), 0 18px 40px -22px rgba(40, 55, 120, 0.35);
+  --shadow-lg: 0 2px 4px rgba(15, 23, 42, 0.05), 0 40px 80px -30px rgba(40, 55, 120, 0.5);
+  --input-bg: rgba(255, 255, 255, 0.56);
+  --row-hover: rgba(79, 91, 255, 0.07);
+  --head-bg: rgba(240, 244, 255, 0.9);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #070b18;
+  --aurora-1: rgba(99, 102, 241, 0.5);
+  --aurora-2: rgba(34, 211, 238, 0.3);
+  --aurora-3: rgba(217, 70, 239, 0.34);
+  --aurora-4: rgba(16, 185, 129, 0.24);
+
+  --glass: rgba(34, 40, 74, 0.4);
+  --glass-strong: rgba(30, 38, 74, 0.68);
+  --glass-border: rgba(255, 255, 255, 0.16);
+  --glass-blur: blur(30px) saturate(190%);
+  --glass-hi: inset 0 1px 0 rgba(255, 255, 255, 0.22), inset 0 0 0 1px rgba(255, 255, 255, 0.05), inset 0 -1px 0 rgba(255, 255, 255, 0.04);
+  --pop-bg: rgba(26, 32, 64, 0.94);
+  --glass-edge: rgba(255, 255, 255, 0.05);
+  --surface: var(--glass);
+  --surface-2: rgba(255, 255, 255, 0.04);
+  --border: rgba(255, 255, 255, 0.09);
+  --border-strong: rgba(255, 255, 255, 0.2);
+
+  --text: #e8edfb;
+  --text-dim: #93a0bf;
+  --accent: #8b97ff;
+  --accent-2: #4fd8f0;
+  --accent-ink: #0a0f26;
+  --accent-soft: rgba(139, 151, 255, 0.16);
+  --grad: linear-gradient(135deg, #6c7bff 0%, #9b6cff 45%, #22d3ee 100%);
+
+  --pass: #3ee0a0;
+  --pass-soft: rgba(62, 224, 160, 0.14);
+  --fail: #ff7388;
+  --fail-soft: rgba(255, 115, 136, 0.15);
+  --other: #f3be5b;
+  --other-soft: rgba(243, 190, 91, 0.16);
+
+  --shadow: 0 1px 1px rgba(0, 0, 0, 0.3), 0 20px 44px -24px rgba(0, 0, 0, 0.8);
+  --shadow-lg: 0 2px 4px rgba(0, 0, 0, 0.4), 0 44px 90px -30px rgba(0, 0, 0, 0.95);
+  --input-bg: rgba(8, 12, 30, 0.55);
+  --row-hover: rgba(139, 151, 255, 0.09);
+  --head-bg: rgba(18, 25, 50, 0.92);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.3s ease, color 0.3s ease;
+}
+
+/* soft aurora behind everything */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: radial-gradient(60vmax 50vmax at 8% -5%, var(--aurora-1), transparent 60%),
+    radial-gradient(55vmax 45vmax at 100% 5%, var(--aurora-2), transparent 60%),
+    radial-gradient(50vmax 40vmax at 90% 100%, var(--aurora-3), transparent 62%),
+    radial-gradient(45vmax 40vmax at 0% 95%, var(--aurora-4), transparent 62%);
+}
+
+button,
+input,
+select {
+  font-family: inherit;
+  font-size: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+/* nice scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 10px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+  background-clip: content-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

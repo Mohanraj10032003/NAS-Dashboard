@@ -1,0 +1,422 @@
+<div class="app" (dragover)="onDragOver($event)" (dragleave)="dragOver = false" (drop)="onDrop($event)">
+  <div class="orbs" aria-hidden="true"><i class="orb o1"></i><i class="orb o2"></i></div>
+
+  <!-- ================= top bar ================= -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo" aria-hidden="true">
+        <svg viewBox="0 0 64 64" width="22" height="22" fill="none" stroke="currentColor" stroke-width="4.5" stroke-linejoin="round" stroke-linecap="round">
+          <ellipse cx="32" cy="16" rx="18" ry="7" />
+          <path d="M14 16v14c0 3.9 8 7 18 7s18-3.1 18-7V16" />
+          <path d="M14 30v14c0 3.9 8 7 18 7s18-3.1 18-7V30" />
+        </svg>
+      </div>
+      <div class="brand-text">
+        <div class="app-name">{{ appName }}</div>
+        <div class="app-sub">Live overview of your NAS reports</div>
+      </div>
+    </div>
+
+    <div class="top-actions">
+      <app-theme-toggle></app-theme-toggle>
+      <button class="btn ghost icon-sm" type="button" *ngIf="canManage" (click)="openSettings()" title="Settings: NAS paths" aria-label="Settings">
+        <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" /></svg>
+      </button>
+      <div class="user">
+        <div class="avatar" aria-hidden="true">{{ userName ? userName.charAt(0).toUpperCase() : 'U' }}</div>
+        <div class="user-meta">
+          <strong>{{ userName }}</strong>
+          <span>{{ userRole }}</span>
+        </div>
+      </div>
+      <button class="btn ghost icon-sm" type="button" (click)="logout()" title="Sign out" aria-label="Sign out">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" />
+        </svg>
+        <span class="hide-sm">Sign out</span>
+      </button>
+    </div>
+  </header>
+
+  <main class="content">
+    <!-- ================= data source bar ================= -->
+    <section class="panel source" [class.has-apps]="apps.length > 0">
+      <div class="app-pick" *ngIf="apps.length">
+        <span class="app-lbl" id="app-lbl">Application</span>
+        <app-select [options]="apps" [value]="state.appId" (valueChange)="changeApp($event)" [canManage]="canManage" (manage)="openSettings()" label="Application"></app-select>
+      </div>
+      <div class="source-info">
+        <div class="folder-icon" [class.on]="state.folderName || isApi" [class.bad]="state.apiOffline" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          </svg>
+        </div>
+        <div class="source-text">
+          <ng-container *ngIf="state.folderName || isApi; else noFolder">
+            <div class="source-title">
+              <span class="folder-name" [title]="state.folderPath">{{ state.folderName || 'NAS server' }}</span>
+              <span class="chip demo" *ngIf="state.isDemo">Demo data</span>
+              <span class="chip live" *ngIf="!state.isDemo && !state.needsPermission && !state.apiOffline"><i></i>Connected</span>
+              <span class="chip warn" *ngIf="state.apiOffline">Not reachable</span>
+              <span class="chip warn" *ngIf="state.needsPermission">Needs permission</span>
+            </div>
+            <div class="source-path" *ngIf="isApi && state.folderPath">{{ state.folderPath }}</div>
+            <div class="source-sub">
+              <ng-container *ngIf="state.loading && !isApi">Reading files… {{ state.processed }} / {{ state.fileCount }}</ng-container>
+              <ng-container *ngIf="state.loading && isApi">Reading the matching reports from the NAS…</ng-container>
+              <ng-container *ngIf="state.tableLoading">Numbers ready · loading the table rows…</ng-container>
+              <ng-container *ngIf="state.catalogLoading">Reading the folder list…</ng-container>
+              <ng-container *ngIf="!state.loading && !state.catalogLoading && queryMode && !state.queried">
+                {{ state.fileCount | number }} report file(s) in this folder · nothing loaded yet
+              </ng-container>
+              <ng-container *ngIf="!state.loading && !state.tableLoading && !state.catalogLoading && (!queryMode || state.queried)">
+                {{ state.fileCount | number }} file(s) read · {{ records.length | number }} rows<ng-container *ngIf="state.lastRefreshed"> · updated {{ state.lastRefreshed | date: 'HH:mm:ss' }}</ng-container><ng-container *ngIf="state.skippedSheets"> · {{ state.skippedSheets }} sheet(s) skipped (no Part Number column)</ng-container>
+              </ng-container>
+            </div>
+          </ng-container>
+          <ng-template #noFolder>
+            <div class="source-title">No NAS folder connected</div>
+            <div class="source-sub">Pick the NAS folder that holds your Excel sheets.</div>
+          </ng-template>
+        </div>
+      </div>
+
+      <div class="source-actions">
+        <button class="btn primary" type="button" *ngIf="!isApi && state.supported && !state.needsPermission" (click)="connect()">
+          <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /></svg>
+          {{ state.folderName && !state.isDemo ? 'Change folder' : 'Connect NAS folder' }}
+        </button>
+        <button class="btn primary" type="button" *ngIf="!isApi && state.needsPermission" (click)="reconnect()">Reconnect</button>
+
+        <label class="btn soft file-btn" *ngIf="!isApi && !state.supported">
+          Select Excel files
+          <input type="file" multiple accept=".xlsx,.xls,.xlsm,.csv" (change)="onFilesPicked($event)" />
+        </label>
+
+        <button class="btn soft" type="button" *ngIf="isApi || (state.folderName && !state.isDemo && !state.needsPermission)" (click)="refresh()" [disabled]="state.loading">
+          <svg [class.spin]="state.loading" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" /></svg>
+          Refresh
+        </button>
+
+        <button class="btn soft toggle" type="button" *ngIf="isApi || (state.folderName && !state.isDemo)" (click)="toggleAuto()" [class.on]="autoRefresh" [attr.aria-pressed]="autoRefresh" title="Reload the folder automatically">
+          <span class="switch"><span></span></span>
+          Auto refresh
+        </button>
+
+        <button class="btn ghost" type="button" *ngIf="!isApi && !state.folderName" (click)="demo()">Try demo data</button>
+        <button class="btn ghost" type="button" *ngIf="!isApi && state.folderName" (click)="disconnect()">Disconnect</button>
+      </div>
+    </section>
+
+    <div class="alert" *ngIf="state.error" role="alert">{{ state.error }}</div>
+    <div class="alert info" *ngIf="state.note && !state.error">{{ state.note }}</div>
+    <div class="alert info" *ngIf="!isApi && !state.supported && !state.folderName">
+      This browser can't open folders directly. Use <b>Chrome or Edge</b> for NAS folder access, or select or drag and drop Excel files here.
+    </div>
+
+    <!-- ================= empty state ================= -->
+    <section class="panel empty" *ngIf="!showResults && !state.loading && !state.catalogLoading && !(isApi && state.error) && (!queryMode || state.queried)">
+      <div class="empty-art" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      <h3>{{ queryMode ? 'No rows for this selection' : state.folderName || isApi ? 'No shipment rows found' : 'Connect your NAS folder to get started' }}</h3>
+      <p *ngIf="queryMode">
+        No report in <b>{{ state.appName }}</b> matches this part number and date range, or its sheets have no <b>Part Number</b> / <b>Result</b> column. Try another part or a wider date range.
+      </p>
+      <p *ngIf="!queryMode && !state.folderName && !isApi">
+        Select <b>Connect NAS folder</b> and choose the shared folder (for example <code>Z:\Shipments</code> or <code>\\NAS\Shipments</code>).
+        Every Excel file inside it, sub-folders included, is read and shown here. Or use <b>Try demo data</b> to preview the dashboard.
+      </p>
+      <p *ngIf="!queryMode && (state.folderName || isApi)">
+        No sheet in this folder has a <b>Part Number</b> or <b>Result</b> column. Check the column names or choose another folder.
+      </p>
+    </section>
+
+    <!-- ================= loading ================= -->
+    <section class="panel loading" *ngIf="(state.loading && !showResults) || state.catalogLoading">
+      <div class="loader"></div>
+      <div *ngIf="state.catalogLoading">Reading the folder list of {{ state.appName || 'the NAS' }}… (this is quick, no Excel file is opened)</div>
+      <div *ngIf="state.loading && !state.catalogLoading && !queryMode">Reading Excel files from NAS… {{ state.processed }} / {{ state.fileCount }}</div>
+      <div *ngIf="state.loading && !state.catalogLoading && queryMode">Reading the matching reports from the NAS… the Total, Pass and Fail numbers appear first.</div>
+    </section>
+
+      <!-- ================= filters ================= -->
+      <section class="panel filters" *ngIf="queryMode ? !!catalog || state.queried : records.length">
+        <div class="filters-head">
+          <div class="filters-title">
+            <h3>Filters</h3>
+            <span class="count" *ngIf="activeFilterCount">{{ activeFilterCount }} active</span>
+            <button type="button" class="link" *ngIf="hasActiveFilters" (click)="resetFilters()">Reset</button>
+          </div>
+          <div class="quick" role="group" aria-label="Date shortcuts" *ngIf="queryMode || hasDate">
+            <button type="button" (click)="quickRange('today')">Today</button>
+            <button type="button" (click)="quickRange('7')">Last 7 days</button>
+            <button type="button" (click)="quickRange('30')">Last 30 days</button>
+            <!-- "All time" is switched off (lakhs of rows do not answer in time). See quickRange() in dashboard.component.ts to bring it back.
+            <button type="button" (click)="quickRange('all')">All time</button> -->
+          </div>
+        </div>
+
+        <div class="filter-grid">
+          <label class="f f-part">
+            <span>Part number <em class="opt" *ngIf="queryMode">(optional)</em></span>
+            <span class="input">
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>
+              <input type="text" list="partList" [placeholder]="queryMode ? 'All parts - or type / pick one' : 'Search or pick a part'" [(ngModel)]="filters.part" (ngModelChange)="onFilterChange()" (keyup.enter)="queryMode && load()" autocomplete="off" spellcheck="false" />
+              <button type="button" class="clear" *ngIf="filters.part" (click)="filters.part = ''; onFilterChange()" aria-label="Clear part filter">×</button>
+            </span>
+            <datalist id="partList">
+              <option *ngFor="let p of partOptions.slice(0, 1500)" [value]="p"></option>
+            </datalist>
+          </label>
+
+          <label class="f f-date" *ngIf="queryMode || hasDate">
+            <span>From date</span>
+            <span class="input"><input type="date" [(ngModel)]="filters.dateFrom" (ngModelChange)="onFilterChange()" [max]="filters.dateTo || ''" /></span>
+          </label>
+
+          <label class="f f-date" *ngIf="queryMode || hasDate">
+            <span>To date</span>
+            <span class="input"><input type="date" [(ngModel)]="filters.dateTo" (ngModelChange)="onFilterChange()" [min]="filters.dateFrom || ''" /></span>
+          </label>
+
+          <div class="f f-load" *ngIf="queryMode">
+            <button class="btn primary load" type="button" (click)="load()" [disabled]="!canLoad">
+              <svg *ngIf="!state.loading" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
+              <svg *ngIf="state.loading" class="spin" viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5" /></svg>
+              {{ state.loading ? 'Loading…' : state.queried && !dirty ? 'Reload' : 'Load data' }}
+            </button>
+          </div>
+
+          <div class="f f-result" *ngIf="hasResult">
+            <span id="resultLbl">Result</span>
+            <div class="seg" role="group" aria-labelledby="resultLbl">
+              <button type="button" [class.active]="filters.result === 'ALL'" (click)="setResult('ALL')">All</button>
+              <button type="button" class="p" [class.active]="filters.result === 'PASS'" (click)="setResult('PASS')">Pass</button>
+              <button type="button" class="x" [class.active]="filters.result === 'FAIL'" (click)="setResult('FAIL')">Fail</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="filters-hint warn" *ngIf="queryMode && rangeTooLong" role="alert">
+          Choose at most <b>{{ maxRangeDays }}</b> days at a time (now {{ rangeDays }}). Loading all the data at once is switched off because it can be lakhs of rows.
+        </div>
+        <div class="filters-hint" *ngIf="queryMode">
+          <ng-container *ngIf="catalog">
+            <b>{{ catalog.fileCount | number }}</b> report file(s) · <b>{{ catalog.parts.length | number }}</b> part number(s)<ng-container *ngIf="catalog.minDate"> · data from <b>{{ catalog.minDate }}</b> to <b>{{ catalog.maxDate }}</b></ng-container>.
+          </ng-container>
+          <span *ngIf="state.queried && dirty" class="dirty">Filters changed: press <b>Load data</b> to update.</span>
+          <span *ngIf="!state.queried">Choose a date range (and a part number if you like), then press <b>Load data</b>. Only the matching reports are read from the NAS.</span>
+        </div>
+
+        <div class="filters-foot" *ngIf="hasActiveFilters && !queryMode">
+          Showing <b>{{ filtered.length | number }}</b> of {{ records.length | number }} rows
+        </div>
+      </section>
+
+
+    <ng-container *ngIf="showResults">
+      <!-- ================= summary ================= -->
+      <section class="summary">
+        <article class="panel rate-card">
+          <div class="donut" [style.--p]="judged ? kpi.rate : 0" [class.none]="!judged" role="img" [attr.aria-label]="'Pass rate ' + kpi.rate + ' percent'">
+            <div class="donut-in">
+              <strong>{{ judged ? (kpi.rate | number: '1.0-1') : '–' }}<small *ngIf="judged">%</small></strong>
+              <span>Pass rate</span>
+            </div>
+          </div>
+          <div class="rate-side">
+            <div class="rate-lbl">Quality score</div>
+            <div class="rate-sub">{{ kpi.pass | number }} of {{ judged | number }} judged records passed</div>
+            <div class="split" role="img" [attr.aria-label]="kpi.pass + ' passed, ' + kpi.fail + ' failed, ' + kpi.other + ' other'">
+              <span class="s-pass" *ngIf="kpi.pass" [style.flex-grow]="kpi.pass"></span>
+              <span class="s-fail" *ngIf="kpi.fail" [style.flex-grow]="kpi.fail"></span>
+              <span class="s-other" *ngIf="kpi.other" [style.flex-grow]="kpi.other"></span>
+            </div>
+          </div>
+        </article>
+
+        <div class="kpis">
+        <article class="panel kpi k-total">
+          <span class="k-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v10l-8 4-8-4V7z" /><path d="M4 7l8 4 8-4M12 11v10" /></svg>
+          </span>
+          <div class="k-n">{{ kpi.total | number }}</div>
+          <div class="k-l">Total records</div>
+          <div class="k-s">{{ partCount | number }} part number(s)</div>
+        </article>
+
+        <article class="panel kpi k-pass">
+          <span class="k-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+          </span>
+          <div class="k-n">{{ kpi.pass | number }}</div>
+          <div class="k-l">Passed</div>
+          <div class="k-s">{{ judged ? ((kpi.pass / judged) * 100 | number: '1.0-1') : 0 }}% of judged</div>
+        </article>
+
+        <article class="panel kpi k-fail">
+          <span class="k-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </span>
+          <div class="k-n">{{ kpi.fail | number }}</div>
+          <div class="k-l">Failed</div>
+          <div class="k-s">{{ judged ? ((kpi.fail / judged) * 100 | number: '1.0-1') : 0 }}% of judged</div>
+        </article>
+
+        <article class="panel kpi k-other" *ngIf="kpi.other">
+          <span class="k-ico" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9" /><path d="M12 8v5M12 16.5v.1" /></svg>
+          </span>
+          <div class="k-n">{{ kpi.other | number }}</div>
+          <div class="k-l">Other</div>
+          <div class="k-s">not pass / fail</div>
+        </article>
+        </div>
+      </section>
+
+      <!-- ================= insights ================= -->
+      <section class="insights" *ngIf="hasDate || hasResult">
+        <article class="panel chart">
+          <div class="panel-head">
+            <h3>Daily results</h3>
+            <div class="legend">
+              <span><i class="k pass"></i>Pass</span>
+              <span><i class="k fail"></i>Fail</span>
+            </div>
+          </div>
+          <div class="plot" *ngIf="trend.length; else noTrend">
+            <div class="yaxis" aria-hidden="true"><span *ngFor="let t of ticks">{{ t }}</span></div>
+            <div class="bars">
+              <div class="grids" aria-hidden="true"><i></i><i></i><i></i></div>
+              <div class="col" *ngFor="let b of trend; let i = index; trackBy: trackByKey" [style.--i]="i" tabindex="0" [attr.aria-label]="b.label + ': ' + b.pass + ' pass, ' + b.fail + ' fail'">
+                <div class="tip"><b>{{ b.label }}</b><span class="tp">{{ b.pass }} pass</span><span class="tf">{{ b.fail }} fail</span></div>
+                <div class="area">
+                  <div class="bar" [style.height.%]="b.h">
+                    <span class="seg-f" *ngIf="b.fail" [style.flex-grow]="b.fail"></span>
+                    <span class="seg-p" *ngIf="b.pass" [style.flex-grow]="b.pass"></span>
+                  </div>
+                </div>
+                <div class="day">{{ b.label }}</div>
+              </div>
+            </div>
+          </div>
+          <ng-template #noTrend><div class="muted pad">No dated rows in the current selection.</div></ng-template>
+        </article>
+
+        <article class="panel top">
+          <div class="panel-head"><h3>Most failing parts</h3></div>
+          <ul class="top-list" *ngIf="topFails.length; else noFails">
+            <li *ngFor="let t of topFails; let i = index">
+              <button type="button" (click)="pickPart(t.part)" [disabled]="queryMode" [attr.title]="queryMode ? null : 'Filter by this part'">
+                <span class="rank">{{ i + 1 }}</span>
+                <span class="top-main">
+                  <span class="top-row">
+                    <span class="mono">{{ t.part }}</span>
+                    <span class="muted">{{ t.fails }} of {{ t.total }}</span>
+                  </span>
+                  <span class="meter"><span [style.width.%]="t.rate"></span></span>
+                </span>
+              </button>
+            </li>
+          </ul>
+          <ng-template #noFails><div class="muted pad">No failures in the current selection.</div></ng-template>
+        </article>
+      </section>
+
+      <!-- ================= table (rows still loading) ================= -->
+      <section class="panel table-wait" *ngIf="state.tableLoading" aria-live="polite">
+        <div class="loader"></div>
+        <div>
+          <strong>Loading the table…</strong>
+          <span>{{ kpi.total | number }} rows are on their way. The numbers above are already final.</span>
+        </div>
+        <div class="skel" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      </section>
+
+      <!-- ================= table ================= -->
+      <section class="panel table-panel" *ngIf="!state.tableLoading">
+        <div class="panel-head">
+          <h3>Records <span class="count">{{ filtered.length | number }}</span></h3>
+          <button class="btn soft" type="button" (click)="exportCsv()" [disabled]="!filtered.length">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 21h14" /></svg>
+            Export CSV
+          </button>
+        </div>
+
+        <!-- phones: the table becomes cards, so sorting moves here -->
+        <div class="sortbar">
+          <label>
+            <span>Sort by</span>
+            <select [ngModel]="sortKey" (ngModelChange)="setSortKey($event)">
+              <option value="part">Part number</option>
+              <option value="date" *ngIf="hasDate">Date</option>
+              <option value="result" *ngIf="hasResult">Result</option>
+              <option value="source">Source</option>
+            </select>
+          </label>
+          <button type="button" class="btn ghost" (click)="flipSort()" [attr.aria-label]="sortDir === 1 ? 'Ascending' : 'Descending'">
+            {{ sortDir === 1 ? 'Ascending' : 'Descending' }}
+          </button>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th class="th-part sortable" (click)="sortBy('part')">Part number <em>{{ arrow('part') }}</em></th>
+                <th class="sortable" *ngIf="hasDate" (click)="sortBy('date')">Date <em>{{ arrow('date') }}</em></th>
+                <th class="sortable" *ngIf="hasResult" (click)="sortBy('result')">Result <em>{{ arrow('result') }}</em></th>
+                <th *ngFor="let c of extraColumns">{{ c }}</th>
+                <th class="sortable" (click)="sortBy('source')">Source <em>{{ arrow('source') }}</em></th>
+                <th class="th-more"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr *ngFor="let r of paged; trackBy: trackById" [class.open]="isOpen(r.id)">
+                <td class="c-part mono" data-label="Part number">{{ r.part || '–' }}</td>
+                <td class="c-date" *ngIf="hasDate" data-label="Date">{{ r.dateLabel || '–' }}</td>
+                <td class="c-res" *ngIf="hasResult" data-label="Result">
+                  <span class="badge" [class.pass]="r.result === 'PASS'" [class.fail]="r.result === 'FAIL'" [class.other]="r.result === 'OTHER'">
+                    <i></i>{{ r.result === 'OTHER' ? (r.resultRaw || '–') : (r.result === 'PASS' ? 'Pass' : 'Fail') }}
+                  </span>
+                </td>
+                <td *ngFor="let c of extraColumns" class="c-x" [class.blank]="!r.extra[c]" [attr.data-label]="c" [title]="r.extra[c] || ''">{{ r.extra[c] || '–' }}</td>
+                <td class="c-x c-src" data-label="Source" [title]="r.source">{{ r.source }}</td>
+                <td class="c-more">
+                  <button type="button" (click)="toggleOpen(r.id)" [attr.aria-expanded]="isOpen(r.id)">
+                    {{ isOpen(r.id) ? 'Hide details' : 'Show details' }}
+                  </button>
+                </td>
+              </tr>
+              <tr *ngIf="!paged.length" class="empty-row">
+                <td [attr.colspan]="tableCols" class="no-rows">No rows match your filters.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pager">
+          <div class="muted">
+            Showing {{ rangeStart | number }}–{{ rangeEnd | number }} of {{ filtered.length | number }}
+          </div>
+          <div class="pager-ctrl">
+            <label class="muted">
+              Rows
+              <select [ngModel]="pageSize" (ngModelChange)="setPageSize($event)">
+                <option *ngFor="let s of pageSizes" [value]="s">{{ s }}</option>
+              </select>
+            </label>
+            <button type="button" (click)="go(1)" [disabled]="page === 1" aria-label="First page">«</button>
+            <button type="button" (click)="go(page - 1)" [disabled]="page === 1" aria-label="Previous page">‹</button>
+            <span class="page-no">{{ page }} / {{ totalPages }}</span>
+            <button type="button" (click)="go(page + 1)" [disabled]="page === totalPages" aria-label="Next page">›</button>
+            <button type="button" (click)="go(totalPages)" [disabled]="page === totalPages" aria-label="Last page">»</button>
+          </div>
+        </div>
+      </section>
+    </ng-container>
+  </main>
+
+  <footer class="foot">© {{ year }} {{ companyName }}. All rights reserved.</footer>
+
+  <div class="drop-overlay" *ngIf="dragOver"><div>Drop Excel files to load them</div></div>
+</div>
