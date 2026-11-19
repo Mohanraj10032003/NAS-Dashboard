@@ -20,7 +20,7 @@
    cd ShipmentTracker.Api
    dotnet run
    ```
-4. Open **http://localhost:5080** and sign in with `econsystems / NAS@2026`.
+4. Open **http://localhost:5080** and sign in with ``.
 
 Details (users, JWT secret, IIS / Windows service, HTTPS, troubleshooting): `ShipmentTracker.Api/README.md`.
 
